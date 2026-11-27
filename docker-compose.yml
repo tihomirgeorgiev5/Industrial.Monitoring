@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: industrial_monitoring
+      POSTGRES_USER: monitor
+      POSTGRES_PASSWORD: monitor_dev
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  mqtt:
+    image: eclipse-mosquitto:2
+    ports: ["1883:1883"]
+    volumes: ["./deploy/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro"]
+
+volumes:
+  pgdata:
