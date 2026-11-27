@@ -9,6 +9,7 @@ namespace Industrial.Monitoring.Api.Services
     {
         private readonly ILogger<MachineSimulator> _logger;
         private readonly Random _random = new();
+        private readonly Dictionary<string, int> _faultSecondsLeft = new();
         public MachineSimulator(ILogger<MachineSimulator> logger)
         {
             _logger = logger;
@@ -31,12 +32,25 @@ namespace Industrial.Monitoring.Api.Services
             {
                 foreach (var item in MachineCatalog.All)
                 {
+                    var left = _faultSecondsLeft.GetValueOrDefault(item.Id);
+
+                    if (left == 0 && _random.NextDouble() < 0.01)
+                    {
+                        left = 30;  
+                    }
+                    bool inFault = left > 0;
+                    if (inFault)
+                    {
+                        left--;
+                    }
+                    _faultSecondsLeft[item.Id] = left;
+
                     var msg = new TelemetryMessage(
                      item.Id,
                      item.Name,
                      Math.Round(item.Rpm + Noise(item.Rpm * 0.03)),
-                     Math.Round(item.Temperature + Noise(1.0),1),
-                     Math.Round(item.Pressure + Noise(0.2),2),
+                     Math.Round(item.Temperature + Noise(1.0) + (inFault ? 35 : 0), 1),
+                     Math.Round(item.Pressure + Noise(0.2) + (inFault ? 3.5 : 0), 2),
                      DateTime.UtcNow);
 
                     var json = JsonSerializer.Serialize(msg, new JsonSerializerOptions(JsonSerializerDefaults.Web));
