@@ -8,6 +8,7 @@ namespace Industrial.Monitoring.Api.Services
     public class MachineSimulator : BackgroundService
     {
         private readonly ILogger<MachineSimulator> _logger;
+        private readonly Random _random = new();
         public MachineSimulator(ILogger<MachineSimulator> logger)
         {
             _logger = logger;
@@ -33,9 +34,9 @@ namespace Industrial.Monitoring.Api.Services
                     var msg = new TelemetryMessage(
                      item.Id,
                      item.Name,
-                     item.Rpm,
-                     item.Temperature,
-                     item.Pressure,
+                     Math.Round(item.Rpm + Noise(item.Rpm * 0.03)),
+                     Math.Round(item.Temperature + Noise(1.0),1),
+                     Math.Round(item.Pressure + Noise(0.2),2),
                      DateTime.UtcNow);
 
                     var json = JsonSerializer.Serialize(msg, new JsonSerializerOptions(JsonSerializerDefaults.Web));
@@ -51,5 +52,9 @@ namespace Industrial.Monitoring.Api.Services
             }
 
         }
-    }
+        private double Noise(double amplitude)
+        {
+            return (_random.NextDouble() - 0.5) * 2 * amplitude;
+        }
+    }   
 }
