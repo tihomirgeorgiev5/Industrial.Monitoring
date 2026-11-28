@@ -9,6 +9,7 @@ namespace Industrial.Monitoring.Api.Services
     public class TelemetryIngestService : BackgroundService
     {
         private readonly ILogger<TelemetryIngestService> _logger;
+        private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
         public TelemetryIngestService(ILogger<TelemetryIngestService> logger)
         {
             _logger = logger;
@@ -30,7 +31,13 @@ namespace Industrial.Monitoring.Api.Services
             client.ApplicationMessageReceivedAsync += e =>
             {
                 var payload = Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
-                _logger.LogInformation("{Topic}: {Payload}", e.ApplicationMessage.Topic, payload);
+
+                var msg = JsonSerializer.Deserialize<TelemetryMessage>(payload, JsonOptions);
+                if (msg is null) return Task.CompletedTask;
+
+                _logger.LogInformation("{MachineId}: {Rpm} rpm, {Temp} °C, {Pressure} bar",
+                    msg.MachineId, msg.Rpm, msg.Temperature, msg.Pressure);
+
                 return Task.CompletedTask;
             };
 
